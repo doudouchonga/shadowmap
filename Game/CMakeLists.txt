@@ -6,5 +6,6 @@ include_directories(${PROJECT_SOURCE_DIR}/utils/include)
 include_directories(${PROJECT_SOURCE_DIR}/Render/include)
 include_directories(${PROJECT_SOURCE_DIR}/Camera/include)
 include_directories(${PROJECT_SOURCE_DIR}/thirdpart/glm/include)
+include_directories(${PROJECT_SOURCE_DIR}/thirdpart/model_import/include)
 
 target_include_directories(Game PRIVATE ${PROJECT_SOURCE_DIR}/thirdpart/glad/include)

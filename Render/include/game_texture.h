@@ -9,6 +9,7 @@ public:
 	~GameTexture();
 	static unsigned int load(char const * path);
 	static unsigned int load_tex(const std::string& path);
+	static unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma = true);
 };
 
 #endif

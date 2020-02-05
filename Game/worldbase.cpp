@@ -4,6 +4,8 @@
 #include "shader.h"
 #include "render_mesh.h"
 #include "shadowmap_mgr.h"
+#include "model.h"
+#include "filesystem.h"
 
 Worldbase::Worldbase()
 {
@@ -144,9 +146,11 @@ void Worldbase::init()
 	debugDepthQuad = new Shader("resources/shader/debug_quad_depth.vs", "resources/shader/debug_quad_depth.fs");
 	debugDepthQuad->use();
 	debugDepthQuad->setInt("depthMap", 0);
-	
+	//
+	nanosuit = new Model(FileSystem::getPath("resources/objects/nanosuit/nanosuit.obj"));
 
 }
+
 
 //debug
 unsigned int quadVAO = 0;
@@ -210,7 +214,12 @@ void Worldbase::render(GLFWwindow *window)
 		set_light_info((*it)->render_shader);
 		(*it)->render(camera);
 	}
-	
+	//
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::scale(model, glm::vec3(0.25f));
+	plan_shader->setMat4("model", model);
+	nanosuit->Draw(plan_shader);
+
     //DEBUG
 	//glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

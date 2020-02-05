@@ -9,6 +9,7 @@
 #include <vector>
 #include "shadowmap_mgr.h"
 
+class Model;
 class Camera;
 class Shader;
 class RenderMesh;
@@ -51,6 +52,8 @@ public:
 
 	ShadowmapMgr * shadowmap_mgr;
 	Shader *debugDepthQuad;
+	//
+	Model *nanosuit;
 };
 
 #endif

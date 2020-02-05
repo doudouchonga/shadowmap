@@ -3,13 +3,14 @@
 #include <glad/glad.h>
 #include "stb_image.h"
 #include <iostream>
+#include "global.h"
 
 unsigned int GameTexture::load_tex(const std::string& path)
 {
 	std::string spath(path);
 	if (spath.compare("") == 0)
 	{
-		return -1;
+		return GlobalVar::INVALID_TEX;
 	}
 	return load(FileSystem::getPath(path).c_str());
 }
@@ -50,4 +51,13 @@ unsigned int GameTexture::load(char const * path)
     }
 
     return textureID;
+}
+
+
+unsigned int GameTexture::TextureFromFile(const char *path, const std::string &directory, bool gamma)
+{
+    std::string filename = std::string(path);
+    filename = directory + '/' + filename;
+
+    return load(filename.c_str());
 }
