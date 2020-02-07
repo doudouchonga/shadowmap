@@ -3,12 +3,14 @@
 #include "game_texture.h"
 #include "global.h"
 #include "worldbase.h"
+#include "vertex_mgr.h"
 // #include <glm.hpp>
 // #include <gtc/matrix_transform.hpp>
 // #include <gtc/type_ptr.hpp>
 
-RenderMesh::RenderMesh()
+RenderMesh::RenderMesh(std::string _key)
 {
+	key = _key;
 	position = glm::vec3(0.0f, 0.0f, 0.0f);
 	rote_axis = glm::vec3(0.0f, 0.0f, 0.0f);
 	rote_enable = false;
@@ -24,21 +26,24 @@ RenderMesh::~RenderMesh()
 
 void RenderMesh::setup(int ver_size, float *Vertices,const std::string& diffuse_path, const std::string& specular_path)
 {
-	 // plane VAO
-    unsigned int VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, ver_size, Vertices, GL_STATIC_DRAW);
-    //
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glBindVertexArray(0);
+
+	// plane VAO
+	VAO = GlobalVar::VERTEX_MGR->get_vao_by_data(key, ver_size, Vertices);
+	
+	//unsigned int VBO;
+    //glGenVertexArrays(1, &VAO);
+    //glGenBuffers(1, &VBO);
+    //glBindVertexArray(VAO);
+    //glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    //glBufferData(GL_ARRAY_BUFFER, ver_size, Vertices, GL_STATIC_DRAW);
+    ////
+    //glEnableVertexAttribArray(0);
+    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    //glEnableVertexAttribArray(1);
+    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    //glEnableVertexAttribArray(2);
+    //glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    //glBindVertexArray(0);
 	this->material.diffuse_path = diffuse_path;
 	this->material.specular_path = specular_path;
     this->material.diffuse_tex = GameTexture::load_tex(this->material.diffuse_path);
@@ -62,15 +67,10 @@ void RenderMesh::render(Camera *camera,Shader *shader, bool set_use)
 	{
 		shader->use();
 	}
-    glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)GlobalVar::SCR_WIDTH / (float)GlobalVar::SCR_HEIGHT, 0.1f, 100.0f);
-    glm::mat4 view = camera->GetViewMatrix();
-    shader->setMat4("projection", projection);
-    shader->setMat4("view", view);
-    // set light uniforms
-    shader->setVec3("viewPos", camera->Position);
-    shader->setInt("material.diffuse", 0);
-    shader->setInt("material.specular", 1);
-	shader->setFloat("material.shininess", 32.0f);
+    
+    shader->setInt("texture_diffuse1", 0);
+    shader->setInt("texture_specular1", 1);
+	
 	if (this->material.diffuse_tex != GlobalVar::INVALID_TEX)
 	{
 		glActiveTexture(GL_TEXTURE0);
@@ -83,7 +83,7 @@ void RenderMesh::render(Camera *camera,Shader *shader, bool set_use)
 	}
 	if (GlobalVar::GAME_WORLD->shadowmap_mgr->depthMap != GlobalVar::INVALID_TEX)
 	{
-		shader->setInt("material.shadowMap", 2);
+		shader->setInt("shadowMap", 2);
 		shader->setInt("ActiveShadowMap", 1);
 
 		glm::mat4 lightSpaceMatrix = GlobalVar::GAME_WORLD->shadowmap_mgr->getlightSpaceMatrix();

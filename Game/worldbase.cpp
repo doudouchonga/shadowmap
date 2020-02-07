@@ -6,6 +6,11 @@
 #include "shadowmap_mgr.h"
 #include "model.h"
 #include "filesystem.h"
+#include "gbuff.h"
+
+#define NR_POINT_LIGHTS 32
+#define NR_DIR_LIGHTS 1
+#define NR_SPOT_LIGHTS 1
 
 Worldbase::Worldbase()
 {
@@ -29,6 +34,7 @@ Worldbase::~Worldbase()
 
 void Worldbase::init()
 {
+	float currentFrame1 = glfwGetTime();
 	float planeVertices[] = {
         // positions            // normals         // texcoords
          25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
@@ -43,7 +49,7 @@ void Worldbase::init()
     //plan_shader = new Shader("resources/shader/unlit_texture.vs", "resources/shader/unlit_texture.fs");
     //plan_shader = new Shader("resources/shader/multiple_lights.vs", "resources/shader/multiple_lights.fs");
     plan_shader = new Shader("resources/shader/multiple_lights_shadow.vs", "resources/shader/multiple_lights_shadow.fs");
-    plan_mesh = new RenderMesh();
+    plan_mesh = new RenderMesh("plane");
     plan_mesh->setup(sizeof(planeVertices), planeVertices, "resources/textures/wood.png");
 	plan_mesh->set_cast_shadow(true);
 
@@ -94,44 +100,53 @@ void Worldbase::init()
 
     //cube_shader = new Shader("resources/shader/unlit_texture.vs", "resources/shader/unlit_texture.fs");
     //cube_shader = new Shader("resources/shader/multiple_lights.vs", "resources/shader/multiple_lights.fs");
-	glm::vec3 cubePositions[] = {
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(2.0f, 5.0f, -15.0f),
-		glm::vec3(-1.5f, -2.2f, -2.5f),
-		glm::vec3(-3.8f, -2.0f, -12.3f),
-		glm::vec3(2.4f, -0.4f, -3.5f),
-		glm::vec3(-1.7f, 3.0f, -7.5f),
-		glm::vec3(1.3f, -2.0f, -2.5f),
-		glm::vec3(1.5f, 2.0f, -2.5f),
-		glm::vec3(1.5f, 0.2f, -1.5f),
-		glm::vec3(-1.3f, 1.0f, -1.5f)
-	};
-
-	for (unsigned int i = 0; i < 10; i++)
+	
+	//Shader *cube_shader = new Shader("resources/shader/multiple_lights_shadow.vs", "resources/shader/multiple_lights_shadow.fs");
+	for (unsigned int i = 0; i < 60; i++)
 	{
-		Shader *cube_shader = new Shader("resources/shader/multiple_lights_shadow.vs", "resources/shader/multiple_lights_shadow.fs");
-		RenderMesh *cube_mesh = new RenderMesh();
-		cube_mesh->set_shader(cube_shader);
-		cube_mesh->setup(sizeof(vertices), vertices, "resources/textures/container2.png");
+		RenderMesh *cube_mesh = new RenderMesh("box_test");
+		cube_mesh->set_shader(plan_shader);
+		cube_mesh->setup(sizeof(vertices), vertices, "resources/textures/container2.png", "resources/textures/container2_specular.png");
 		cube_mesh->set_cast_shadow(true);
 		cube_mesh->rote_enable = true;
 		cube_mesh->rote_axis = glm::vec3(1.0f, 0.3f, 0.5f);
-		cube_mesh->position = cubePositions[i];
+
+		float xPos = ((rand() % 50)) - 25;
+		float yPos = ((rand() % 10));
+		float zPos = ((rand() % 30)) - 25;
+
+		cube_mesh->position = glm::vec3(xPos, yPos, zPos);
 		cube_mesh->angle = 20 * i;
 		add_scene_entity(cube_mesh);
 	}
-    
+	float currentFrame2 = glfwGetTime();
+	std::cout << "1111:" << currentFrame2 - currentFrame1 << std::endl;
 	//light
-	auto index = this->add_light(LT_POINT);
-	PointLight* l = (PointLight*)this->get_light(index);
-	l->position = glm::vec3(0.7f, 1.2f, 2.0f);//1.7f, 0.2f, 2.0f //-2.0f, 4.0f, -1.0f
-	l->ambient = glm::vec3(0.05f, 0.05f, 0.05f);
-	l->diffuse = glm::vec3(0.99f, 0.99f, 0.99f);
-	l->specular = glm::vec3(1.0f, 1.0f, 1.0f);
-	l->constant = 1.0f;
-	l->linear = 0.09;
-	l->quadratic = 0.032;
-	shadowmap_mgr->set_cast_shadow_light(l);
+	const unsigned int NR_LIGHTS = 32;
+	srand(13);
+	for (unsigned int i = 0; i < NR_LIGHTS; i++)
+	{
+		// calculate slightly random offsets
+		float xPos = ((rand() % 30) ) - 15;
+		float yPos = ((rand() % 4) );
+		float zPos = ((rand() % 30) ) - 15;
+		
+		auto index = this->add_light(LT_POINT);
+		PointLight* l = (PointLight*)this->get_light(index);
+		l->position = glm::vec3(xPos, yPos, zPos);//1.7f, 0.2f, 2.0f //-2.0f, 4.0f, -1.0f
+		//l->position = glm::vec3(1.7f, 0.2f, 2.0f);//1.7f, 0.2f, 2.0f //-2.0f, 4.0f, -1.0f
+		l->ambient = glm::vec3(0.05f, 0.05f, 0.05f);
+		l->diffuse = glm::vec3(0.99f, 0.99f, 0.99f);
+		l->specular = glm::vec3(0.1f, 0.1f, 0.1f);
+		l->constant = 0.1f;
+		l->linear = 0.85;
+		l->quadratic = 0.002;
+		shadowmap_mgr->set_cast_shadow_light(l);
+
+	}
+
+	float currentFrame3 = glfwGetTime();
+	std::cout << "2222:" << currentFrame3 - currentFrame2 << std::endl;
 	//
 	/*auto dindex = this->add_light(LT_DIR);
 	DirLight* dl = (DirLight*)this->get_light(dindex);
@@ -147,14 +162,31 @@ void Worldbase::init()
 	debugDepthQuad->use();
 	debugDepthQuad->setInt("depthMap", 0);
 	//
-	nanosuit = new Model(FileSystem::getPath("resources/objects/nanosuit/nanosuit.obj"));
+	for (unsigned int i = 0; i < 1; i++)
+	{
+		float xPos = ((rand() % 30)) - 15;
+		float yPos = 0;
+		float zPos = ((rand() % 30)) - 15;
 
+		Model *nanosuit = new Model(FileSystem::getPath("resources/objects/nanosuit/nanosuit.obj"));
+		nanosuit->set_shader(plan_shader);
+		nanosuit->position = glm::vec3(xPos, yPos, zPos);
+		//GlobalVar::GAME_WORLD->shadowmap_mgr->set_cast_shadow_models(nanosuit, true);
+		add_scene_model(nanosuit);
+
+	}
+	float currentFrame4 = glfwGetTime();
+	std::cout << "3333:" << currentFrame4 - currentFrame3 << std::endl;
+
+	gbuff = new Gbuff();
+	gbuff->init();
 }
 
 
 //debug
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
+
 void renderQuad()
 {
 	if (quadVAO == 0)
@@ -182,61 +214,151 @@ void renderQuad()
 	glBindVertexArray(0);
 }
 
+
+float fps_time = -1.0;
+int fps = 0;
+void debug_fps()
+{
+	float currentFrame = glfwGetTime();
+	fps += 1;
+	if (fps_time < 0)
+	{
+		fps_time = currentFrame;
+	}
+
+	if (currentFrame - fps_time >= 1.0)
+	{
+		std::cout << "fps :" << fps << std::endl;
+		fps = 0;
+		fps_time = currentFrame;
+	}
+}
+
 void Worldbase::render(GLFWwindow *window)
 {
-    // render
-    // ------
+	
+	debug_fps();
+	//render_forward();
+	render_deferred();
+    // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+    // -------------------------------------------------------------------------------
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+	
+}
+
+void Worldbase::render_forward()
+{
+	// render
+	// ------
 	//
+	
 	shadowmap_mgr->render_depth_map();
 	//glViewport(0, 0, GlobalVar::SCR_WIDTH, GlobalVar::SCR_HEIGHT);
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	this->set_light_info(plan_shader);
-	
-    plan_mesh->render(camera, plan_shader);
-    //
-	glm::vec3 cubePositions[] = {
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(2.0f, 5.0f, -15.0f),
-		glm::vec3(-1.5f, -2.2f, -2.5f),
-		glm::vec3(-3.8f, -2.0f, -12.3f),
-		glm::vec3(2.4f, -0.4f, -3.5f),
-		glm::vec3(-1.7f, 3.0f, -7.5f),
-		glm::vec3(1.3f, -2.0f, -2.5f),
-		glm::vec3(1.5f, 2.0f, -2.5f),
-		glm::vec3(1.5f, 0.2f, -1.5f),
-		glm::vec3(-1.3f, 1.0f, -1.5f)
-	};
 
-	for (auto it = scene_entities.begin(); it!= scene_entities.end();++it)
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	set_camera_info(plan_shader);
+	set_light_info(plan_shader);
+
+	plan_mesh->render(camera, plan_shader);
+	//
+	
+	for (auto it = scene_entities.begin(); it != scene_entities.end(); ++it)
 	{
+		set_camera_info((*it)->render_shader);
 		set_light_info((*it)->render_shader);
 		(*it)->render(camera);
 	}
 	//
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::scale(model, glm::vec3(0.25f));
-	plan_shader->setMat4("model", model);
-	nanosuit->Draw(plan_shader);
+	plan_shader->use();
+	for (auto it = scene_models.begin(); it != scene_models.end(); ++it)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, (*it)->position);
+		model = glm::scale(model, glm::vec3(0.25f));
+		plan_shader->setMat4("model", model);
+		(*it)->Draw(plan_shader);
+	}
+	
 
-    //DEBUG
+	//DEBUG
 	//glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//float near_plane = 1.0f, far_plane = 7.5f;
+	//float near_plane = 1.0f, far_plane = 10.5f;
 	//debugDepthQuad->use();
 	//debugDepthQuad->setFloat("near_plane", near_plane);
 	//debugDepthQuad->setFloat("far_plane", far_plane);
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, shadowmap_mgr->depthMap);//shadowmap_mgr->depthMap
 	//renderQuad();
+}
 
-    // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-    // -------------------------------------------------------------------------------
-    glfwSwapBuffers(window);
-    glfwPollEvents();
+void Worldbase::set_camera_info(Shader * shader)
+{
+	shader->use();
+	glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)GlobalVar::SCR_WIDTH / (float)GlobalVar::SCR_HEIGHT, 0.1f, 100.0f);
+	glm::mat4 view = camera->GetViewMatrix();
+	shader->setMat4("projection", projection);
+	shader->setMat4("view", view);
+	// set light uniforms
+	shader->setVec3("viewPos", camera->Position);
+}
+
+void Worldbase::render_deferred()
+{
+	gbuff->use();
+	// 延迟渲染的时候，这里的颜色一定要改成0
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	set_camera_info(gbuff->gbuff_shader);
 	
+	plan_mesh->render(camera, gbuff->gbuff_shader);
+	//
+
+	for (auto it = scene_entities.begin(); it != scene_entities.end(); ++it)
+	{
+		(*it)->render(camera, gbuff->gbuff_shader);
+	}
+
+
+	for (auto it = scene_models.begin(); it != scene_models.end(); ++it)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, (*it)->position);
+		//model = glm::translate(model, glm::vec3(-3.0, -1.0, 0.0));
+		model = glm::scale(model, glm::vec3(0.25f));
+		gbuff->gbuff_shader->setMat4("model", model);
+		(*it)->Draw(gbuff->gbuff_shader);
+	}
+
+	/*glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, glm::vec3(-3.0, -1.0, 0.0));
+	model = glm::scale(model, glm::vec3(0.25f));
+	gbuff->gbuff_shader->setMat4("model", model);
+	nanosuit->Draw(gbuff->gbuff_shader);*/
+
+	gbuff->unuse();
+	//
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	set_light_info(gbuff->shaderLightingPass);
+	gbuff->bind();
+	
+	/*debugDepthQuad->use();
+	debugDepthQuad->setInt("gPosition", 0);
+	debugDepthQuad->setInt("gNormal", 1);
+	debugDepthQuad->setInt("gAlbedoSpec", 2);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, gbuff->gPosition);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, gbuff->gNormal);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, gbuff->gAlbedoSpec);*/
+	renderQuad();
+
 }
 
 void Worldbase::processInput(GLFWwindow *window)
@@ -288,6 +410,11 @@ void Worldbase::scroll_callback(GLFWwindow* window, double xoffset, double yoffs
 void Worldbase::add_scene_entity(RenderMesh * ent)
 {
 	scene_entities.push_back(ent);
+}
+
+void Worldbase::add_scene_model(Model * ent)
+{
+	scene_models.push_back(ent);
 }
 
 int Worldbase::add_light(LightType light_type)
@@ -374,6 +501,8 @@ LightBase* Worldbase::get_light(int i)
 void Worldbase::set_light_info(Shader* lightingShader)
 {
 	lightingShader->use();
+	//BUG 忘记设置，导致高光一直表现不对
+	lightingShader->setFloat("shininess", 32.0);
 	lightingShader->setVec3("viewPos", camera->Position);
 	if (dirLights.size() > 0)
 	{

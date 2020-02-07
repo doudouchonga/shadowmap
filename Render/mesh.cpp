@@ -1,5 +1,7 @@
 #include "mesh.h"
 #include "game_texture.h"
+#include "global.h"
+#include "vertex_mgr.h"
 
 /*  Functions  */
 // constructor
@@ -8,10 +10,11 @@ Mesh::Mesh(std::vector<Vertex> vertices, vector<unsigned int> indices, vector<Te
     this->vertices = vertices;
     this->indices = indices;
     this->textures = textures;
-
+	
     // now that we have all the required data, set the vertex buffers and its attribute pointers.
     setupMesh();
 }
+
 
 // render the mesh
 void Mesh::Draw(Shader *shader) 
@@ -56,6 +59,7 @@ void Mesh::Draw(Shader *shader)
 // initializes all the buffer objects/arrays
 void Mesh::setupMesh()
 {
+	
     // create buffers/arrays
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);

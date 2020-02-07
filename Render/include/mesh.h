@@ -37,6 +37,7 @@ struct Texture {
 class Mesh {
 
 public:
+	string key;
     /*  Mesh Data  */
     vector<Vertex> vertices;
     vector<unsigned int> indices;

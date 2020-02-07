@@ -1,4 +1,4 @@
-add_library(Render render_mesh.cpp game_texture.cpp shader.cpp shadowmap_mgr.cpp model.cpp mesh.cpp)
+add_library(Render render_mesh.cpp game_texture.cpp shader.cpp shadowmap_mgr.cpp model.cpp mesh.cpp gbuff.cpp vertex_mgr.cpp)
 
 set(GLAD_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/thirdpart/glad/include)
 set(RENDER_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)

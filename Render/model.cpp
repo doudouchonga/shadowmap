@@ -165,3 +165,8 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
     }
     return textures;
 }
+
+void Model::set_shader(Shader* shader)
+{
+	render_shader = shader;
+}

@@ -4,6 +4,7 @@
 #include <vector>
 #include "render_mesh.h"
 #include "light.h"
+#include "model.h"
 
 class Shader;
 class ShadowmapMgr
@@ -18,10 +19,12 @@ public:
 
 	//
 	std::vector<RenderMesh*> cast_shadow_entites;
+	std::vector<Model*> cast_shadow_models;
 	PointLight *cast_shadow_light;
 	Shader *depthShader;
 	void set_cast_shadow_light(PointLight * l);
 	void set_cast_shadow_entites(RenderMesh* ent, bool add);
+	void set_cast_shadow_models(Model* ent, bool add);
 	void render_depth_map();
 	glm::mat4 getlightSpaceMatrix();
 };

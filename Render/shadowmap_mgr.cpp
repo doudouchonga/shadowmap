@@ -71,10 +71,30 @@ void ShadowmapMgr::set_cast_shadow_entites(RenderMesh* ent, bool add)
 	}
 }
 
+void ShadowmapMgr::set_cast_shadow_models(Model* ent, bool add)
+{
+	auto find_it = std::find(cast_shadow_models.begin(), cast_shadow_models.end(), ent);
+	if (find_it == cast_shadow_models.end())
+	{
+		if (add)
+		{
+			cast_shadow_models.push_back(ent);
+		}
+
+	}
+	else
+	{
+		if (!add)
+		{
+			cast_shadow_models.erase(find_it);
+		}
+	}
+}
+
 glm::mat4 ShadowmapMgr::getlightSpaceMatrix()
 {
 	glm::mat4 lightProjection, lightView;
-	float near_plane = 1.0f, far_plane = 7.5f;
+	float near_plane = 1.0f, far_plane = 10.5f;
 
 	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 	lightView = glm::lookAt(cast_shadow_light->position, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));//cast_shadow_light->position
@@ -86,7 +106,7 @@ glm::mat4 ShadowmapMgr::getlightSpaceMatrix()
 
 void ShadowmapMgr::render_depth_map()
 {
-	if (cast_shadow_entites.size() == 0)
+	if (cast_shadow_entites.size() == 0 && cast_shadow_models.size() == 0)
 	{
 		return; 
 	}
@@ -108,6 +128,15 @@ void ShadowmapMgr::render_depth_map()
 	for (auto it = cast_shadow_entites.begin(); it != cast_shadow_entites.end(); ++it)
 	{
 		(*it)->render(GlobalVar::GAME_WORLD->camera, depthShader, false);
+	}
+
+	for (auto it = cast_shadow_models.begin(); it != cast_shadow_models.end(); ++it)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-3.0, -1.0, 0.0));
+		model = glm::scale(model, glm::vec3(0.25f));
+		depthShader->setMat4("model", model);
+		(*it)->Draw(depthShader);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

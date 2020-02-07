@@ -36,7 +36,11 @@ public:
 
     // draws the model, and thus all its meshes
     void Draw(Shader* shader);
-    
+
+	void set_shader(Shader* shader);
+
+	glm::vec3 position;
+
 private:
     /*  Functions   */
     // loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
@@ -50,7 +54,10 @@ private:
     // checks all material textures of a given type and loads the textures if they're not loaded yet.
     // the required info is returned as a Texture struct.
     vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName);
-};
 
+	Shader *render_shader;
+
+
+};
 
 #endif

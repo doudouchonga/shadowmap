@@ -16,7 +16,7 @@ struct Material {
 class RenderMesh
 {
 public:
-	RenderMesh();
+	RenderMesh(std::string key);
 	~RenderMesh();
 	void setup(int ver_size, float *Vertices, const std::string& diffuse_path, const std::string& specular_path = "");
 	void set_shader(Shader* shader);
@@ -34,6 +34,7 @@ public:
 	Material material;
 	Shader *render_shader;
 	void set_cast_shadow(bool c);
+	std::string key;
 private:
 	//
 	bool cast_shadow;
