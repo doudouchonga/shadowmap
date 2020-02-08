@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include "game_texture.h"
 #include "global.h"
-#include "vertex_mgr.h"
+#include "worldbase.h"
 
 /*  Functions  */
 // constructor
@@ -17,34 +17,38 @@ Mesh::Mesh(std::vector<Vertex> vertices, vector<unsigned int> indices, vector<Te
 
 
 // render the mesh
-void Mesh::Draw(Shader *shader) 
+void Mesh::Draw(Shader* shader)
 {
-    // bind appropriate textures
-    unsigned int diffuseNr  = 1;
-    unsigned int specularNr = 1;
-    unsigned int normalNr   = 1;
-    unsigned int heightNr   = 1;
-    for(unsigned int i = 0; i < textures.size(); i++)
-    {
-        glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
-        // retrieve texture number (the N in diffuse_textureN)
-        string number;
-        string name = textures[i].type;
-        if(name == "texture_diffuse")
-            number = std::to_string(diffuseNr++);
-        else if(name == "texture_specular")
-            number = std::to_string(specularNr++); // transfer unsigned int to stream
-        else if(name == "texture_normal")
-            number = std::to_string(normalNr++); // transfer unsigned int to stream
-         else if(name == "texture_height")
-            number = std::to_string(heightNr++); // transfer unsigned int to stream
+	// bind appropriate textures
+	unsigned int diffuseNr = 1;
+	unsigned int specularNr = 1;
+	unsigned int normalNr = 1;
+	unsigned int heightNr = 1;
+	unsigned int shadow_map_index = 0;
+	for (unsigned int i = 0; i < textures.size(); i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
+		// retrieve texture number (the N in diffuse_textureN)
+		string number;
+		string name = textures[i].type;
+		if (name == "texture_diffuse")
+			number = std::to_string(diffuseNr++);
+		else if (name == "texture_specular")
+			number = std::to_string(specularNr++); // transfer unsigned int to stream
+		else if (name == "texture_normal")
+			number = std::to_string(normalNr++); // transfer unsigned int to stream
+		else if (name == "texture_height")
+			number = std::to_string(heightNr++); // transfer unsigned int to stream
 
-        // now set the sampler to the correct texture unit
-        glUniform1i(glGetUniformLocation(shader->ID, (name + number).c_str()), i);
-        // and finally bind the texture
-        glBindTexture(GL_TEXTURE_2D, textures[i].id);
-    }
-    
+		// now set the sampler to the correct texture unit
+		glUniform1i(glGetUniformLocation(shader->ID, (name + number).c_str()), i);
+		// and finally bind the texture
+		glBindTexture(GL_TEXTURE_2D, textures[i].id);
+		//
+		shadow_map_index = i + 1;
+	}
+	// 加上这个，会降低20帧
+	//GlobalVar::GAME_WORLD->shadowmap_mgr->bind_depth_map(shader, shadow_map_index);
     // draw mesh
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

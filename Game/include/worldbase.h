@@ -11,7 +11,7 @@ class Model;
 class Camera;
 class Shader;
 class RenderMesh;
-
+class GameObject;
 class Worldbase
 {
 public:
@@ -35,13 +35,9 @@ public:
 	float lastFrame;
 
 	Shader *plan_shader;
-	RenderMesh *plan_mesh;
 
-	std::vector<RenderMesh *> scene_entities;
-	void add_scene_entity(RenderMesh * ent);
-
-	std::vector<Model *> scene_models;
-	void add_scene_model(Model * ent);
+	std::vector<GameObject *> scene_entities;
+	void add_scene_entity(GameObject * ent);
 
 	std::vector<DirLight*> dirLights;
 	std::vector<PointLight*> pointLights;
@@ -56,6 +52,8 @@ public:
 	Shader *debugDepthQuad;
 	//
 	Gbuff* gbuff;
+	//
+
 
 };
 

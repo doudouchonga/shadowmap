@@ -18,7 +18,7 @@ public:
 	void unuse();
 	void bind();
 	unsigned int gBuffer;
-    unsigned int gPosition, gNormal, gAlbedoSpec;
+    unsigned int gPosition, gNormal, gAlbedoSpec, gPositionLightSpace;
 	Shader *gbuff_shader;
 	Shader *shaderLightingPass;
 };

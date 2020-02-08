@@ -7,7 +7,7 @@ Model::Model(string const &path, bool gamma) : gammaCorrection(gamma)
 }
 
 // draws the model, and thus all its meshes
-void Model::Draw(Shader *shader)
+void Model::Draw(Shader* shader)
 {
     for(unsigned int i = 0; i < meshes.size(); i++)
         meshes[i].Draw(shader);
@@ -166,7 +166,4 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
     return textures;
 }
 
-void Model::set_shader(Shader* shader)
-{
-	render_shader = shader;
-}
+

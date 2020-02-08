@@ -10,6 +10,7 @@ uniform float far_plane;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
+uniform sampler2D gPositionLightSpace;
 
 // required when using a perspective projection matrix
 float LinearizeDepth(float depth)
@@ -24,7 +25,7 @@ void main()
     // FragColor = vec4(vec3(LinearizeDepth(depthValue) / far_plane), 1.0); // perspective
     //FragColor = vec4(vec3(depthValue), 1.0); // orthographic
 
-    float depthValue = texture(gAlbedoSpec, TexCoords).a * 100.0;
-    //FragColor = texture(depthMap, TexCoords);
-    FragColor = vec4(vec3(depthValue), 1.0);
+    //float depthValue = texture(gPositionLightSpace, TexCoords).a * 100.0;
+    FragColor = texture(gPositionLightSpace, TexCoords);
+    //FragColor = vec4(vec3(depthValue), 1.0);
 }

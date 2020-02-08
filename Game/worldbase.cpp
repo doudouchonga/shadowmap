@@ -7,8 +7,9 @@
 #include "model.h"
 #include "filesystem.h"
 #include "gbuff.h"
+#include "game_object.h"
 
-#define NR_POINT_LIGHTS 32
+#define NR_POINT_LIGHTS 64
 #define NR_DIR_LIGHTS 1
 #define NR_SPOT_LIGHTS 1
 
@@ -49,9 +50,12 @@ void Worldbase::init()
     //plan_shader = new Shader("resources/shader/unlit_texture.vs", "resources/shader/unlit_texture.fs");
     //plan_shader = new Shader("resources/shader/multiple_lights.vs", "resources/shader/multiple_lights.fs");
     plan_shader = new Shader("resources/shader/multiple_lights_shadow.vs", "resources/shader/multiple_lights_shadow.fs");
-    plan_mesh = new RenderMesh("plane");
+	RenderMesh *plan_mesh = new RenderMesh();
     plan_mesh->setup(sizeof(planeVertices), planeVertices, "resources/textures/wood.png");
-	plan_mesh->set_cast_shadow(true);
+	GameObject *plan_obj = new GameObject();
+	plan_obj->set_cast_shadow(true);
+	plan_obj->render_mesh = plan_mesh;
+	add_scene_entity(plan_obj);
 
 	float vertices[] = {
         // positions          // normals           // texture coords
@@ -102,34 +106,35 @@ void Worldbase::init()
     //cube_shader = new Shader("resources/shader/multiple_lights.vs", "resources/shader/multiple_lights.fs");
 	
 	//Shader *cube_shader = new Shader("resources/shader/multiple_lights_shadow.vs", "resources/shader/multiple_lights_shadow.fs");
-	for (unsigned int i = 0; i < 60; i++)
+	RenderMesh *cube_mesh = new RenderMesh();
+	cube_mesh->setup(sizeof(vertices), vertices, "resources/textures/container2.png", "resources/textures/container2_specular.png");
+	for (unsigned int i = 0; i < 100; i++)
 	{
-		RenderMesh *cube_mesh = new RenderMesh("box_test");
-		cube_mesh->set_shader(plan_shader);
-		cube_mesh->setup(sizeof(vertices), vertices, "resources/textures/container2.png", "resources/textures/container2_specular.png");
-		cube_mesh->set_cast_shadow(true);
-		cube_mesh->rote_enable = true;
-		cube_mesh->rote_axis = glm::vec3(1.0f, 0.3f, 0.5f);
+		GameObject *cube_obj = new GameObject();
+		cube_obj->set_cast_shadow(true);
+		cube_obj->render_mesh = cube_mesh;
+		cube_obj->rote_enable = true;
+		cube_obj->rote_axis = glm::vec3(1.0f, 0.3f, 0.5f);
 
 		float xPos = ((rand() % 50)) - 25;
 		float yPos = ((rand() % 10));
 		float zPos = ((rand() % 30)) - 25;
 
-		cube_mesh->position = glm::vec3(xPos, yPos, zPos);
-		cube_mesh->angle = 20 * i;
-		add_scene_entity(cube_mesh);
+		cube_obj->position = glm::vec3(xPos, yPos, zPos);
+		cube_obj->angle = 20 * i;
+		add_scene_entity(cube_obj);
 	}
 	float currentFrame2 = glfwGetTime();
 	std::cout << "1111:" << currentFrame2 - currentFrame1 << std::endl;
 	//light
-	const unsigned int NR_LIGHTS = 32;
+	const unsigned int NR_LIGHTS = 40;
 	srand(13);
 	for (unsigned int i = 0; i < NR_LIGHTS; i++)
 	{
 		// calculate slightly random offsets
-		float xPos = ((rand() % 30) ) - 15;
-		float yPos = ((rand() % 4) );
-		float zPos = ((rand() % 30) ) - 15;
+		float xPos = ((rand() % 40) ) - 15;
+		float yPos = ((rand() % 10) );
+		float zPos = ((rand() % 40) ) - 15;
 		
 		auto index = this->add_light(LT_POINT);
 		PointLight* l = (PointLight*)this->get_light(index);
@@ -141,19 +146,21 @@ void Worldbase::init()
 		l->constant = 0.1f;
 		l->linear = 0.85;
 		l->quadratic = 0.002;
-		shadowmap_mgr->set_cast_shadow_light(l);
+		//
 
 	}
+	//
+	auto index = this->add_light(LT_DIR);
+	DirLight *dl = (DirLight*)this->get_light(index);
+	dl->direction = glm::vec3(-1.0f, -1.0f, -1.0f);
+	dl->ambient = glm::vec3(0.05f, 0.05f, 0.05f);
+	dl->diffuse = glm::vec3(0.99f, 0.99f, 0.99f);
+	dl->specular = glm::vec3(0.1f, 0.1f, 0.1f);
+	shadowmap_mgr->set_cast_shadow_light(dl);
 
 	float currentFrame3 = glfwGetTime();
 	std::cout << "2222:" << currentFrame3 - currentFrame2 << std::endl;
 	//
-	/*auto dindex = this->add_light(LT_DIR);
-	DirLight* dl = (DirLight*)this->get_light(dindex);
-	dl->direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-	dl->ambient = glm::vec3(0.05f, 0.05f, 0.05f);
-	dl->diffuse = glm::vec3(0.4f, 0.4f, 0.4f);
-	dl->specular = glm::vec3(0.5f, 0.5f, 0.5f);*/
 	//
 	glEnable(GL_DEPTH_TEST);
 	shadowmap_mgr->init_depth_map();
@@ -162,17 +169,21 @@ void Worldbase::init()
 	debugDepthQuad->use();
 	debugDepthQuad->setInt("depthMap", 0);
 	//
-	for (unsigned int i = 0; i < 1; i++)
-	{
-		float xPos = ((rand() % 30)) - 15;
-		float yPos = 0;
-		float zPos = ((rand() % 30)) - 15;
+	Model *nanosuit = new Model(FileSystem::getPath("resources/objects/nanosuit/nanosuit.obj"));
 
-		Model *nanosuit = new Model(FileSystem::getPath("resources/objects/nanosuit/nanosuit.obj"));
-		nanosuit->set_shader(plan_shader);
-		nanosuit->position = glm::vec3(xPos, yPos, zPos);
-		//GlobalVar::GAME_WORLD->shadowmap_mgr->set_cast_shadow_models(nanosuit, true);
-		add_scene_model(nanosuit);
+	for (unsigned int i = 0; i < 100; i++)
+	{
+		float xPos = ((rand() % 40)) - 15;
+		float yPos = 0;
+		float zPos = ((rand() % 40)) - 15;
+
+		
+		GameObject *nanosuit_obj = new GameObject();
+		nanosuit_obj->model_mesh = nanosuit;
+		nanosuit_obj->scale = 0.25;
+		nanosuit_obj->position = glm::vec3(xPos, yPos, zPos);
+		nanosuit_obj->set_cast_shadow(true);
+		add_scene_entity(nanosuit_obj);
 
 	}
 	float currentFrame4 = glfwGetTime();
@@ -260,27 +271,14 @@ void Worldbase::render_forward()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	set_camera_info(plan_shader);
 	set_light_info(plan_shader);
-
-	plan_mesh->render(camera, plan_shader);
+	
 	//
 	
 	for (auto it = scene_entities.begin(); it != scene_entities.end(); ++it)
 	{
-		set_camera_info((*it)->render_shader);
-		set_light_info((*it)->render_shader);
-		(*it)->render(camera);
+		(*it)->render(plan_shader);
 	}
 	//
-	plan_shader->use();
-	for (auto it = scene_models.begin(); it != scene_models.end(); ++it)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, (*it)->position);
-		model = glm::scale(model, glm::vec3(0.25f));
-		plan_shader->setMat4("model", model);
-		(*it)->Draw(plan_shader);
-	}
-	
 
 	//DEBUG
 	//glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -308,37 +306,24 @@ void Worldbase::set_camera_info(Shader * shader)
 
 void Worldbase::render_deferred()
 {
+	//
+	shadowmap_mgr->render_depth_map();
+
 	gbuff->use();
-	// 延迟渲染的时候，这里的颜色一定要改成0
+	// 延迟渲染的时候，改成0
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	set_camera_info(gbuff->gbuff_shader);
-	
-	plan_mesh->render(camera, gbuff->gbuff_shader);
+
+	glm::mat4 lightSpaceMatrix = GlobalVar::GAME_WORLD->shadowmap_mgr->getlightSpaceMatrix();
+	gbuff->gbuff_shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
 	//
 
 	for (auto it = scene_entities.begin(); it != scene_entities.end(); ++it)
 	{
-		(*it)->render(camera, gbuff->gbuff_shader);
+		(*it)->render(gbuff->gbuff_shader);
 	}
-
-
-	for (auto it = scene_models.begin(); it != scene_models.end(); ++it)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, (*it)->position);
-		//model = glm::translate(model, glm::vec3(-3.0, -1.0, 0.0));
-		model = glm::scale(model, glm::vec3(0.25f));
-		gbuff->gbuff_shader->setMat4("model", model);
-		(*it)->Draw(gbuff->gbuff_shader);
-	}
-
-	/*glm::mat4 model = glm::mat4(1.0f);
-	model = glm::translate(model, glm::vec3(-3.0, -1.0, 0.0));
-	model = glm::scale(model, glm::vec3(0.25f));
-	gbuff->gbuff_shader->setMat4("model", model);
-	nanosuit->Draw(gbuff->gbuff_shader);*/
 
 	gbuff->unuse();
 	//
@@ -346,17 +331,21 @@ void Worldbase::render_deferred()
 	
 	set_light_info(gbuff->shaderLightingPass);
 	gbuff->bind();
-	
+	GlobalVar::GAME_WORLD->shadowmap_mgr->bind_depth_map(gbuff->shaderLightingPass, 4);
+
 	/*debugDepthQuad->use();
 	debugDepthQuad->setInt("gPosition", 0);
 	debugDepthQuad->setInt("gNormal", 1);
 	debugDepthQuad->setInt("gAlbedoSpec", 2);
+	debugDepthQuad->setInt("gPositionLightSpace", 3);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, gbuff->gPosition);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, gbuff->gNormal);
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, gbuff->gAlbedoSpec);*/
+	glBindTexture(GL_TEXTURE_2D, gbuff->gAlbedoSpec);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, gbuff->gPositionLightSpace);*/
 	renderQuad();
 
 }
@@ -407,15 +396,11 @@ void Worldbase::scroll_callback(GLFWwindow* window, double xoffset, double yoffs
     camera->ProcessMouseScroll(yoffset);
 }
 
-void Worldbase::add_scene_entity(RenderMesh * ent)
+void Worldbase::add_scene_entity(GameObject * ent)
 {
 	scene_entities.push_back(ent);
 }
 
-void Worldbase::add_scene_model(Model * ent)
-{
-	scene_models.push_back(ent);
-}
 
 int Worldbase::add_light(LightType light_type)
 {

@@ -16,28 +16,19 @@ struct Material {
 class RenderMesh
 {
 public:
-	RenderMesh(std::string key);
+	RenderMesh();
 	~RenderMesh();
 	void setup(int ver_size, float *Vertices, const std::string& diffuse_path, const std::string& specular_path = "");
-	void set_shader(Shader* shader);
-	void render(Camera *cam,Shader *shader = NULL, bool set_use = true);
+
+	void render(Shader *shader);
+
 	unsigned int VAO;
 	unsigned int draw_count;
 	//
-	float angle;
-	glm::vec3 position;
-	glm::vec3 rote_axis;
-	bool rote_enable;
-	glm::mat4 getModeMatrix();
 
 	//
 	Material material;
-	Shader *render_shader;
-	void set_cast_shadow(bool c);
-	std::string key;
-private:
-	//
-	bool cast_shadow;
+	
 };
 
 #endif

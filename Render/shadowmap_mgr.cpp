@@ -5,6 +5,7 @@
 #include "shader.h"
 #include "render_mesh.h"
 #include "worldbase.h"
+#include "game_object.h"
 
 ShadowmapMgr::ShadowmapMgr()
 {
@@ -46,12 +47,19 @@ void ShadowmapMgr::init_depth_map()
 	depthShader = new Shader("resources/shader/shadow_mapping_depth.vs", "resources/shader/shadow_mapping_depth.fs");
 }
 
-void ShadowmapMgr::set_cast_shadow_light(PointLight * l)
+void ShadowmapMgr::set_cast_shadow_light(DirLight * l)
 {
 	this->cast_shadow_light = l;
+
+	float range = 40.0f;
+	float near_plane = 1.0f, far_plane = near_plane + 60;
+	lightProjection = glm::ortho(-range, range, -range, range, near_plane, far_plane);
+	glm::vec3 light_pos = glm::vec3(15, 15, 15);
+	glm::vec3 light_look_at = light_pos + cast_shadow_light->direction;
+	lightView = glm::lookAt(light_pos, light_look_at, glm::vec3(0.0, 1.0, 0.0));//cast_shadow_light->position
 }
 
-void ShadowmapMgr::set_cast_shadow_entites(RenderMesh* ent, bool add)
+void ShadowmapMgr::set_cast_shadow_entites(GameObject* ent, bool add)
 {
 	auto find_it = std::find(cast_shadow_entites.begin(), cast_shadow_entites.end(), ent);
 	if (find_it == cast_shadow_entites.end())
@@ -71,33 +79,17 @@ void ShadowmapMgr::set_cast_shadow_entites(RenderMesh* ent, bool add)
 	}
 }
 
-void ShadowmapMgr::set_cast_shadow_models(Model* ent, bool add)
-{
-	auto find_it = std::find(cast_shadow_models.begin(), cast_shadow_models.end(), ent);
-	if (find_it == cast_shadow_models.end())
-	{
-		if (add)
-		{
-			cast_shadow_models.push_back(ent);
-		}
-
-	}
-	else
-	{
-		if (!add)
-		{
-			cast_shadow_models.erase(find_it);
-		}
-	}
-}
 
 glm::mat4 ShadowmapMgr::getlightSpaceMatrix()
 {
-	glm::mat4 lightProjection, lightView;
-	float near_plane = 1.0f, far_plane = 10.5f;
-
-	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	lightView = glm::lookAt(cast_shadow_light->position, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));//cast_shadow_light->position
+	//glm::mat4 lightProjection, lightView;
+	//
+	//float range = 40.0f;
+	//float near_plane = 1.0f, far_plane = near_plane + 60;
+	//lightProjection = glm::ortho(-range, range, -range, range, near_plane, far_plane);
+	//glm::vec3 light_pos = glm::vec3(15, 15, 15);
+	//glm::vec3 light_look_at = light_pos + cast_shadow_light->direction;
+	//lightView = glm::lookAt(light_pos, light_look_at, glm::vec3(0.0, 1.0, 0.0));//cast_shadow_light->position
 	/*glm::mat4 projection = glm::perspective(glm::radians(GlobalVar::GAME_WORLD->camera->Zoom), (float)GlobalVar::SCR_WIDTH / (float)GlobalVar::SCR_HEIGHT, 0.1f, 100.0f);
 	glm::mat4 view = GlobalVar::GAME_WORLD->camera->GetViewMatrix();
 	return projection * view;*/
@@ -106,7 +98,7 @@ glm::mat4 ShadowmapMgr::getlightSpaceMatrix()
 
 void ShadowmapMgr::render_depth_map()
 {
-	if (cast_shadow_entites.size() == 0 && cast_shadow_models.size() == 0)
+	if (cast_shadow_entites.size() == 0)
 	{
 		return; 
 	}
@@ -119,7 +111,7 @@ void ShadowmapMgr::render_depth_map()
 	//BUG clear操作注意放到绑定fbo之后，不然等于这个fbo会一直没有清理过缓存
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	depthShader->use();
+	//GlobalVar::GAME_WORLD->set_camera_info(depthShader);
 	//DEBUG
 	//depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
 	
@@ -127,17 +119,24 @@ void ShadowmapMgr::render_depth_map()
 
 	for (auto it = cast_shadow_entites.begin(); it != cast_shadow_entites.end(); ++it)
 	{
-		(*it)->render(GlobalVar::GAME_WORLD->camera, depthShader, false);
+		(*it)->render(depthShader);
 	}
-
-	for (auto it = cast_shadow_models.begin(); it != cast_shadow_models.end(); ++it)
-	{
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(-3.0, -1.0, 0.0));
-		model = glm::scale(model, glm::vec3(0.25f));
-		depthShader->setMat4("model", model);
-		(*it)->Draw(depthShader);
-	}
-
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void ShadowmapMgr::bind_depth_map(Shader *shader, unsigned int index)
+{
+	if (depthMap != GlobalVar::INVALID_TEX)
+	{
+		shader->use();
+		shader->setInt("shadowMap", index);
+		shader->setInt("ActiveShadowMap", 1);
+
+		glm::mat4 lightSpaceMatrix =getlightSpaceMatrix();
+		shader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
+
+		glActiveTexture(GL_TEXTURE0 + index);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+	}
 }
