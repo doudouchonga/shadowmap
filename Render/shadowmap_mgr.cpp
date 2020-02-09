@@ -11,6 +11,7 @@ ShadowmapMgr::ShadowmapMgr()
 {
 	depthMapFBO = -1;
 	depthMap = -1;
+	light_pos = glm::vec3(15, 15, 15);
 }
 
 ShadowmapMgr::~ShadowmapMgr()
@@ -52,11 +53,10 @@ void ShadowmapMgr::set_cast_shadow_light(DirLight * l)
 	this->cast_shadow_light = l;
 
 	float range = 40.0f;
-	float near_plane = 1.0f, far_plane = near_plane + 60;
+	float near_plane = 1.0f, far_plane = near_plane + 100;
 	lightProjection = glm::ortho(-range, range, -range, range, near_plane, far_plane);
-	glm::vec3 light_pos = glm::vec3(15, 15, 15);
 	glm::vec3 light_look_at = light_pos + cast_shadow_light->direction;
-	lightView = glm::lookAt(light_pos, light_look_at, glm::vec3(0.0, 1.0, 0.0));//cast_shadow_light->position
+	lightView = glm::lookAt(light_pos, light_look_at, glm::vec3(0.0, 1.0, 0.0));//cast_shadow_light->positionn
 }
 
 void ShadowmapMgr::set_cast_shadow_entites(GameObject* ent, bool add)
@@ -84,12 +84,12 @@ glm::mat4 ShadowmapMgr::getlightSpaceMatrix()
 {
 	//glm::mat4 lightProjection, lightView;
 	//
-	//float range = 40.0f;
-	//float near_plane = 1.0f, far_plane = near_plane + 60;
-	//lightProjection = glm::ortho(-range, range, -range, range, near_plane, far_plane);
-	//glm::vec3 light_pos = glm::vec3(15, 15, 15);
-	//glm::vec3 light_look_at = light_pos + cast_shadow_light->direction;
-	//lightView = glm::lookAt(light_pos, light_look_at, glm::vec3(0.0, 1.0, 0.0));//cast_shadow_light->position
+	/*float range = 40.0f;
+	float near_plane = 1.0f, far_plane = near_plane + 100;
+	lightProjection = glm::ortho(-range, range, -range, range, near_plane, far_plane);
+	glm::vec3 light_look_at = light_pos + cast_shadow_light->direction;
+	lightView = glm::lookAt(light_pos, light_look_at, glm::vec3(0.0, 1.0, 0.0));*/
+	//cast_shadow_light->position
 	/*glm::mat4 projection = glm::perspective(glm::radians(GlobalVar::GAME_WORLD->camera->Zoom), (float)GlobalVar::SCR_WIDTH / (float)GlobalVar::SCR_HEIGHT, 0.1f, 100.0f);
 	glm::mat4 view = GlobalVar::GAME_WORLD->camera->GetViewMatrix();
 	return projection * view;*/
@@ -123,6 +123,8 @@ void ShadowmapMgr::render_depth_map()
 	}
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//渲染一次后将列表清空
+	cast_shadow_entites.clear();
 }
 
 void ShadowmapMgr::bind_depth_map(Shader *shader, unsigned int index)
@@ -138,5 +140,21 @@ void ShadowmapMgr::bind_depth_map(Shader *shader, unsigned int index)
 
 		glActiveTexture(GL_TEXTURE0 + index);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
+	}
+}
+
+void ShadowmapMgr::update_shadow_light_pos(float x, float y, float z)
+{
+	cast_shadow_light->direction += glm::vec3(x, y, z);
+	float range = 40.0f;
+	float near_plane = 1.0f, far_plane = near_plane + 100;
+	lightProjection = glm::ortho(-range, range, -range, range, near_plane, far_plane);
+	glm::vec3 light_look_at = light_pos + cast_shadow_light->direction;
+	lightView = glm::lookAt(light_pos, light_look_at, glm::vec3(0.0, 1.0, 0.0));//cast_shadow_light->position
+	//
+	Worldbase* current_world = GlobalVar::GAME_WORLD;
+	for (auto it = current_world->scene_entities.begin(); it!= current_world->scene_entities.end(); ++it)
+	{
+		(*it)->set_cast_shadow(true);
 	}
 }

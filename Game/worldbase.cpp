@@ -33,6 +33,83 @@ Worldbase::~Worldbase()
 
 }
 
+void Worldbase::initSphere()
+{
+
+	std::vector<glm::vec3> positions;
+	std::vector<glm::vec2> uv;
+	std::vector<glm::vec3> normals;
+	std::vector<unsigned int> indices;
+
+	const unsigned int X_SEGMENTS = 64;
+	const unsigned int Y_SEGMENTS = 64;
+	const float PI = 3.14159265359;
+	for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+	{
+		for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+		{
+			float xSegment = (float)x / (float)X_SEGMENTS;
+			float ySegment = (float)y / (float)Y_SEGMENTS;
+			float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+			float yPos = std::cos(ySegment * PI);
+			float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+			positions.push_back(glm::vec3(xPos, yPos, zPos));
+			uv.push_back(glm::vec2(xSegment, ySegment));
+			normals.push_back(glm::vec3(xPos, yPos, zPos));
+		}
+	}
+
+	bool oddRow = false;
+	for (int y = 0; y < Y_SEGMENTS; ++y)
+	{
+		if (!oddRow) // even rows: y == 0, y == 2; and so on
+		{
+			for (int x = 0; x <= X_SEGMENTS; ++x)
+			{
+				indices.push_back(y       * (X_SEGMENTS + 1) + x);
+				indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+			}
+		}
+		else
+		{
+			for (int x = X_SEGMENTS; x >= 0; --x)
+			{
+				indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+				indices.push_back(y       * (X_SEGMENTS + 1) + x);
+			}
+		}
+		oddRow = !oddRow;
+	}
+
+	std::vector<float> data;
+	for (int i = 0; i < positions.size(); ++i)
+	{
+		data.push_back(positions[i].x);
+		data.push_back(positions[i].y);
+		data.push_back(positions[i].z);
+		if (uv.size() > 0)
+		{
+			data.push_back(uv[i].x);
+			data.push_back(uv[i].y);
+		}
+		if (normals.size() > 0)
+		{
+			data.push_back(normals[i].x);
+			data.push_back(normals[i].y);
+			data.push_back(normals[i].z);
+		}
+	}
+
+	RenderMesh *sphere_mesh = new RenderMesh();
+	sphere_mesh->setupExt(data, indices);
+	GameObject *sphere_obj = new GameObject();
+	sphere_obj->render_mesh = sphere_mesh;
+	sphere_obj->position = glm::vec3(0, 10, 0);
+	sphere_obj->set_cast_shadow(true);
+	add_scene_entity(sphere_obj);
+}
+
 void Worldbase::init()
 {
 	float currentFrame1 = glfwGetTime();
@@ -53,7 +130,7 @@ void Worldbase::init()
 	RenderMesh *plan_mesh = new RenderMesh();
     plan_mesh->setup(sizeof(planeVertices), planeVertices, "resources/textures/wood.png");
 	GameObject *plan_obj = new GameObject();
-	plan_obj->set_cast_shadow(true);
+	plan_obj->set_cast_shadow(true); 
 	plan_obj->render_mesh = plan_mesh;
 	add_scene_entity(plan_obj);
 
@@ -150,13 +227,7 @@ void Worldbase::init()
 
 	}
 	//
-	auto index = this->add_light(LT_DIR);
-	DirLight *dl = (DirLight*)this->get_light(index);
-	dl->direction = glm::vec3(-1.0f, -1.0f, -1.0f);
-	dl->ambient = glm::vec3(0.05f, 0.05f, 0.05f);
-	dl->diffuse = glm::vec3(0.99f, 0.99f, 0.99f);
-	dl->specular = glm::vec3(0.1f, 0.1f, 0.1f);
-	shadowmap_mgr->set_cast_shadow_light(dl);
+
 
 	float currentFrame3 = glfwGetTime();
 	std::cout << "2222:" << currentFrame3 - currentFrame2 << std::endl;
@@ -191,6 +262,16 @@ void Worldbase::init()
 
 	gbuff = new Gbuff();
 	gbuff->init();
+
+	//initSphere();
+	
+	auto index = this->add_light(LT_DIR);
+	DirLight *dl = (DirLight*)this->get_light(index);
+	dl->direction = glm::vec3(-1.0f, -1.0f, -1.0f);
+	dl->ambient = glm::vec3(0.05f, 0.05f, 0.05f);
+	dl->diffuse = glm::vec3(0.99f, 0.99f, 0.99f);
+	dl->specular = glm::vec3(0.1f, 0.1f, 0.1f);
+	shadowmap_mgr->set_cast_shadow_light(dl);
 }
 
 
@@ -346,7 +427,11 @@ void Worldbase::render_deferred()
 	glBindTexture(GL_TEXTURE_2D, gbuff->gAlbedoSpec);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, gbuff->gPositionLightSpace);*/
+
 	renderQuad();
+
+
+	
 
 }
 
@@ -371,6 +456,11 @@ void Worldbase::processInput(GLFWwindow *window)
 		camera->Position.y += camera->MovementSpeed * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		camera->Position.y -= camera->MovementSpeed * deltaTime;
+
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		shadowmap_mgr->update_shadow_light_pos(0.00, 0.00, 0.01);
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		shadowmap_mgr->update_shadow_light_pos(0.00, 0.00, -0.01);
 }
 
 void Worldbase::mouse_callback(GLFWwindow* window, double xpos, double ypos)

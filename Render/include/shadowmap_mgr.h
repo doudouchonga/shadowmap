@@ -30,6 +30,9 @@ public:
 	glm::mat4 getlightSpaceMatrix();
 	void bind_depth_map(Shader *shader, unsigned int index);
 	glm::mat4 lightProjection, lightView;
+
+	void update_shadow_light_pos(float x, float y, float z);
+	glm::vec3 light_pos;
 };
 
 #endif

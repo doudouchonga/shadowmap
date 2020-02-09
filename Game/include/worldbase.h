@@ -18,6 +18,7 @@ public:
 	Worldbase();
 	~Worldbase();
 	void init();
+	void initSphere();
 	void render(GLFWwindow *window);
 	void render_forward();
 	void render_deferred();

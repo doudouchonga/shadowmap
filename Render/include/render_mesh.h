@@ -21,9 +21,10 @@ public:
 	void setup(int ver_size, float *Vertices, const std::string& diffuse_path, const std::string& specular_path = "");
 
 	void render(Shader *shader);
-
+	void setupExt(std::vector<float> data, std::vector<unsigned int> indices);
 	unsigned int VAO;
 	unsigned int draw_count;
+	int render_type;
 	//
 
 	//
