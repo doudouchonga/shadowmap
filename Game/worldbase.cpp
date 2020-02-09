@@ -263,7 +263,7 @@ void Worldbase::init()
 	gbuff = new Gbuff();
 	gbuff->init();
 
-	//initSphere();
+	initSphere();
 	
 	auto index = this->add_light(LT_DIR);
 	DirLight *dl = (DirLight*)this->get_light(index);

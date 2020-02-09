@@ -111,10 +111,8 @@ void ShadowmapMgr::render_depth_map()
 	//BUG clear操作注意放到绑定fbo之后，不然等于这个fbo会一直没有清理过缓存
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//GlobalVar::GAME_WORLD->set_camera_info(depthShader);
-	//DEBUG
-	//depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
 	
+	depthShader->use();
 	depthShader->setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
 	for (auto it = cast_shadow_entites.begin(); it != cast_shadow_entites.end(); ++it)
