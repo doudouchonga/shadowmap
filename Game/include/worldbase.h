@@ -12,6 +12,7 @@ class Camera;
 class Shader;
 class RenderMesh;
 class GameObject;
+class PbrMgr;
 class Worldbase
 {
 public:
@@ -22,6 +23,7 @@ public:
 	void render(GLFWwindow *window);
 	void render_forward();
 	void render_deferred();
+	void render_pbr();
 	void processInput(GLFWwindow *window);
 	void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 	void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -39,6 +41,9 @@ public:
 
 	std::vector<GameObject *> scene_entities;
 	void add_scene_entity(GameObject * ent);
+	
+	std::vector<GameObject *> scene_entities_pbr;
+	void add_scene_entity_pbr(GameObject * ent);
 
 	std::vector<DirLight*> dirLights;
 	std::vector<PointLight*> pointLights;
@@ -49,12 +54,13 @@ public:
 
 	void set_light_info(Shader* shader);
 	void set_camera_info(Shader *shader);
+	void set_pbr_info(Shader *shader);
 	ShadowmapMgr * shadowmap_mgr;
 	Shader *debugDepthQuad;
 	//
 	Gbuff* gbuff;
 	//
-
+	PbrMgr *pbr_mgr;
 
 };
 

@@ -8,6 +8,7 @@
 #include "filesystem.h"
 #include "gbuff.h"
 #include "game_object.h"
+#include "pbr_mgr.h"
 
 #define NR_POINT_LIGHTS 64
 #define NR_DIR_LIGHTS 1
@@ -15,7 +16,7 @@
 
 Worldbase::Worldbase()
 {
-	camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+	camera = new Camera(glm::vec3(0.0f, 5.0f, 10.0f));
 	lastX = (float)GlobalVar::SCR_WIDTH / 2.0;
 	lastY = (float)GlobalVar::SCR_HEIGHT / 2.0;
 	firstMouse = true;
@@ -26,6 +27,8 @@ Worldbase::Worldbase()
 
 	GlobalVar::GAME_WORLD = this;
 	shadowmap_mgr = new ShadowmapMgr();
+
+	pbr_mgr = new PbrMgr();
 }
 
 Worldbase::~Worldbase()
@@ -101,111 +104,208 @@ void Worldbase::initSphere()
 		}
 	}
 
+	int nrRows = 5;
+	int nrColumns = 7;
+	float spacing = 2.5;
+
 	RenderMesh *sphere_mesh = new RenderMesh();
-	sphere_mesh->setupExt(data, indices);
-	GameObject *sphere_obj = new GameObject();
+	sphere_mesh->setupExt(data, indices, "resources/textures/toy_box_diffuse.png");
+	sphere_mesh->setPbrTex("resources/textures/pbr/rusted_iron/albedo.png",
+		"resources/textures/pbr/rusted_iron/normal.png",
+		"resources/textures/pbr/rusted_iron/metallic.png",
+		"resources/textures/pbr/rusted_iron/roughness.png",
+		"resources/textures/pbr/rusted_iron/ao.png");
+
+	RenderMesh *sphere_mesh2 = new RenderMesh();
+	sphere_mesh2->setupExt(data, indices, "resources/textures/toy_box_diffuse.png");
+	sphere_mesh2->setPbrTex("resources/textures/pbr/gold/albedo.png",
+		"resources/textures/pbr/gold/normal.png",
+		"resources/textures/pbr/gold/metallic.png",
+		"resources/textures/pbr/gold/roughness.png",
+		"resources/textures/pbr/gold/ao.png");
+
+	RenderMesh *sphere_mesh3 = new RenderMesh();
+	sphere_mesh3->setupExt(data, indices, "resources/textures/toy_box_diffuse.png");
+	sphere_mesh3->setPbrTex("resources/textures/pbr/grass/albedo.png",
+		"resources/textures/pbr/grass/normal.png",
+		"resources/textures/pbr/grass/metallic.png",
+		"resources/textures/pbr/grass/roughness.png",
+		"resources/textures/pbr/grass/ao.png");
+
+	RenderMesh *sphere_mesh4 = new RenderMesh();
+	sphere_mesh4->setupExt(data, indices, "resources/textures/toy_box_diffuse.png");
+	sphere_mesh4->setPbrTex("resources/textures/pbr/plastic/albedo.png",
+		"resources/textures/pbr/plastic/normal.png",
+		"resources/textures/pbr/plastic/metallic.png",
+		"resources/textures/pbr/plastic/roughness.png",
+		"resources/textures/pbr/plastic/ao.png");
+
+	RenderMesh *sphere_mesh5 = new RenderMesh();
+	sphere_mesh5->setupExt(data, indices, "resources/textures/toy_box_diffuse.png");
+	sphere_mesh5->setPbrTex("resources/textures/pbr/wall/albedo.png",
+		"resources/textures/pbr/wall/normal.png",
+		"resources/textures/pbr/wall/metallic.png",
+		"resources/textures/pbr/wall/roughness.png",
+		"resources/textures/pbr/wall/ao.png");
+
+	for (int row = 0; row < nrRows; ++row)
+	{
+		
+		for (int col = 0; col < nrColumns; ++col)
+		{
+			GameObject *sphere_obj = new GameObject();
+			if (row == 0)
+			{
+				sphere_obj->render_mesh = sphere_mesh;
+				
+			}else if (row == 1)
+			{
+				sphere_obj->render_mesh = sphere_mesh2;
+			}
+			else if (row == 2)
+			{
+				sphere_obj->render_mesh = sphere_mesh3;
+			}
+			else if (row == 3)
+			{
+				sphere_obj->render_mesh = sphere_mesh4;
+			}
+			else 
+			{
+				sphere_obj->render_mesh = sphere_mesh5;
+			}
+
+
+			sphere_obj->position = glm::vec3(
+				(col - (nrColumns / 2)) * spacing,
+				(row - (nrRows / 2)) * spacing,
+				0.0f
+			);
+
+			sphere_obj->roughness = glm::clamp((float)col / (float)nrColumns, 0.05f, 1.0f);
+			sphere_obj->metallic = (float)row / (float)nrRows;
+			add_scene_entity_pbr(sphere_obj);
+
+		}
+	}
+	
+	/*GameObject *sphere_obj = new GameObject();
 	sphere_obj->render_mesh = sphere_mesh;
 	sphere_obj->position = glm::vec3(0, 10, 0);
-	sphere_obj->set_cast_shadow(true);
-	add_scene_entity(sphere_obj);
+	add_scene_entity_pbr(sphere_obj);*/
+
+	/*GameObject *sphere_obj2 = new GameObject();
+	sphere_obj2->render_mesh = sphere_mesh;
+	sphere_obj2->position = glm::vec3(3, 10, 0);
+	sphere_obj2->set_cast_shadow(true);
+	add_scene_entity(sphere_obj2);*/
 }
 
 void Worldbase::init()
 {
 	float currentFrame1 = glfwGetTime();
-	float planeVertices[] = {
-        // positions            // normals         // texcoords
-         25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
-        -25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
-        -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+	pbr_mgr->init("resources/textures/hdr/newport_loft.hdr");
+	plan_shader = new Shader("resources/shader/multiple_lights_shadow.vs", "resources/shader/multiple_lights_shadow.fs");
+	//float planeVertices[] = {
+ //       // positions            // normals         // texcoords
+ //        25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+ //       -25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+ //       -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
 
-         25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
-        -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
-         25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 25.0f
-    };
+ //        25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+ //       -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+ //        25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 25.0f
+ //   };
 
-    //plan_shader = new Shader("resources/shader/unlit_texture.vs", "resources/shader/unlit_texture.fs");
-    //plan_shader = new Shader("resources/shader/multiple_lights.vs", "resources/shader/multiple_lights.fs");
-    plan_shader = new Shader("resources/shader/multiple_lights_shadow.vs", "resources/shader/multiple_lights_shadow.fs");
-	RenderMesh *plan_mesh = new RenderMesh();
-    plan_mesh->setup(sizeof(planeVertices), planeVertices, "resources/textures/wood.png");
-	GameObject *plan_obj = new GameObject();
-	plan_obj->set_cast_shadow(true); 
-	plan_obj->render_mesh = plan_mesh;
-	add_scene_entity(plan_obj);
+ //   //plan_shader = new Shader("resources/shader/unlit_texture.vs", "resources/shader/unlit_texture.fs");
+ //   //plan_shader = new Shader("resources/shader/multiple_lights.vs", "resources/shader/multiple_lights.fs");
+    
+	//RenderMesh *plan_mesh = new RenderMesh();
+ //   plan_mesh->setup(sizeof(planeVertices), planeVertices, "resources/textures/wood.png");
+	//GameObject *plan_obj = new GameObject();
+	//plan_obj->set_cast_shadow(true); 
+	//plan_obj->render_mesh = plan_mesh;
+	//add_scene_entity(plan_obj);
 
-	float vertices[] = {
-        // positions          // normals           // texture coords
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+	//float vertices[] = {
+ //       // positions          // normals           // texture coords
+ //       -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+ //        0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+ //        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+ //        0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+ //       -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+ //       -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+ //       -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+ //        0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+ //        0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+ //        0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+ //       -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+ //       -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+ //       -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+ //       -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+ //       -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+ //       -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+ //       -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+ //       -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+ //        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+ //        0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+ //        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+ //        0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+ //        0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+ //        0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+ //       -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+ //        0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+ //        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+ //        0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+ //       -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+ //       -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
-    };
+ //       -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+ //        0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+ //        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+ //        0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+ //       -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+ //       -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+ //   };
 
     //cube_shader = new Shader("resources/shader/unlit_texture.vs", "resources/shader/unlit_texture.fs");
     //cube_shader = new Shader("resources/shader/multiple_lights.vs", "resources/shader/multiple_lights.fs");
 	
 	//Shader *cube_shader = new Shader("resources/shader/multiple_lights_shadow.vs", "resources/shader/multiple_lights_shadow.fs");
-	RenderMesh *cube_mesh = new RenderMesh();
-	cube_mesh->setup(sizeof(vertices), vertices, "resources/textures/container2.png", "resources/textures/container2_specular.png");
-	for (unsigned int i = 0; i < 100; i++)
-	{
-		GameObject *cube_obj = new GameObject();
-		cube_obj->set_cast_shadow(true);
-		cube_obj->render_mesh = cube_mesh;
-		cube_obj->rote_enable = true;
-		cube_obj->rote_axis = glm::vec3(1.0f, 0.3f, 0.5f);
+	//RenderMesh *cube_mesh = new RenderMesh();
+	//cube_mesh->setup(sizeof(vertices), vertices, "resources/textures/container2.png", "resources/textures/container2_specular.png");
+	//for (unsigned int i = 0; i < 100; i++)
+	//{
+	//	GameObject *cube_obj = new GameObject();
+	//	//cube_obj->set_cast_shadow(true);
+	//	cube_obj->render_mesh = cube_mesh;
+	//	cube_obj->rote_enable = true;
+	//	cube_obj->rote_axis = glm::vec3(1.0f, 0.3f, 0.5f);
 
-		float xPos = ((rand() % 50)) - 25;
-		float yPos = ((rand() % 10));
-		float zPos = ((rand() % 30)) - 25;
+	//	float xPos = ((rand() % 50)) - 25;
+	//	float yPos = ((rand() % 10));
+	//	float zPos = ((rand() % 30)) - 25;
 
-		cube_obj->position = glm::vec3(xPos, yPos, zPos);
-		cube_obj->angle = 20 * i;
-		add_scene_entity(cube_obj);
-	}
+	//	cube_obj->position = glm::vec3(xPos, yPos, zPos);
+	//	cube_obj->angle = 20 * i;
+	//	add_scene_entity(cube_obj);
+	//}
 	float currentFrame2 = glfwGetTime();
 	std::cout << "1111:" << currentFrame2 - currentFrame1 << std::endl;
 	//light
-	const unsigned int NR_LIGHTS = 40;
+	const unsigned int NR_LIGHTS = 4;
 	srand(13);
+	glm::vec3 lightPositions[] = {
+		glm::vec3(-10.0f,  10.0f, 10.0f),
+		glm::vec3(10.0f,  10.0f, 10.0f),
+		glm::vec3(-10.0f, -10.0f, 10.0f),
+		glm::vec3(10.0f, -10.0f, 10.0f),
+	};
+
 	for (unsigned int i = 0; i < NR_LIGHTS; i++)
 	{
 		// calculate slightly random offsets
@@ -215,13 +315,13 @@ void Worldbase::init()
 		
 		auto index = this->add_light(LT_POINT);
 		PointLight* l = (PointLight*)this->get_light(index);
-		l->position = glm::vec3(xPos, yPos, zPos);//1.7f, 0.2f, 2.0f //-2.0f, 4.0f, -1.0f
-		//l->position = glm::vec3(1.7f, 0.2f, 2.0f);//1.7f, 0.2f, 2.0f //-2.0f, 4.0f, -1.0f
+		//l->position = glm::vec3(xPos, yPos, zPos);
+		l->position = lightPositions[i];
 		l->ambient = glm::vec3(0.05f, 0.05f, 0.05f);
 		l->diffuse = glm::vec3(0.99f, 0.99f, 0.99f);
-		l->specular = glm::vec3(0.1f, 0.1f, 0.1f);
-		l->constant = 0.1f;
-		l->linear = 0.85;
+		l->specular = glm::vec3(1.0f, 1.0f, 1.0f);
+		l->constant = 1.1f;
+		l->linear = 0.05;
 		l->quadratic = 0.002;
 		//
 
@@ -240,7 +340,7 @@ void Worldbase::init()
 	debugDepthQuad->use();
 	debugDepthQuad->setInt("depthMap", 0);
 	//
-	Model *nanosuit = new Model(FileSystem::getPath("resources/objects/nanosuit/nanosuit.obj"));
+	/*Model *nanosuit = new Model(FileSystem::getPath("resources/objects/nanosuit/nanosuit.obj"));
 
 	for (unsigned int i = 0; i < 100; i++)
 	{
@@ -248,7 +348,7 @@ void Worldbase::init()
 		float yPos = 0;
 		float zPos = ((rand() % 40)) - 15;
 
-		
+
 		GameObject *nanosuit_obj = new GameObject();
 		nanosuit_obj->model_mesh = nanosuit;
 		nanosuit_obj->scale = 0.25;
@@ -261,17 +361,16 @@ void Worldbase::init()
 	std::cout << "3333:" << currentFrame4 - currentFrame3 << std::endl;
 
 	gbuff = new Gbuff();
-	gbuff->init();
-
+	gbuff->init();*/
 	initSphere();
 	
-	auto index = this->add_light(LT_DIR);
+	/*auto index = this->add_light(LT_DIR);
 	DirLight *dl = (DirLight*)this->get_light(index);
 	dl->direction = glm::vec3(-1.0f, -1.0f, -1.0f);
 	dl->ambient = glm::vec3(0.05f, 0.05f, 0.05f);
 	dl->diffuse = glm::vec3(0.99f, 0.99f, 0.99f);
 	dl->specular = glm::vec3(0.1f, 0.1f, 0.1f);
-	shadowmap_mgr->set_cast_shadow_light(dl);
+	shadowmap_mgr->set_cast_shadow_light(dl);*/
 }
 
 
@@ -328,10 +427,11 @@ void debug_fps()
 
 void Worldbase::render(GLFWwindow *window)
 {
-	
+
 	debug_fps();
-	//render_forward();
-	render_deferred();
+	render_forward();
+	//render_deferred();
+	
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
@@ -348,11 +448,10 @@ void Worldbase::render_forward()
 	shadowmap_mgr->render_depth_map();
 	//glViewport(0, 0, GlobalVar::SCR_WIDTH, GlobalVar::SCR_HEIGHT);
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	set_camera_info(plan_shader);
 	set_light_info(plan_shader);
-	
 	//
 	
 	for (auto it = scene_entities.begin(); it != scene_entities.end(); ++it)
@@ -360,7 +459,8 @@ void Worldbase::render_forward()
 		(*it)->render(plan_shader);
 	}
 	//
-
+	render_pbr();
+	pbr_mgr->render_env_map();
 	//DEBUG
 	//glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -372,17 +472,28 @@ void Worldbase::render_forward()
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, shadowmap_mgr->depthMap);//shadowmap_mgr->depthMap
 	//renderQuad();
+
 }
 
 void Worldbase::set_camera_info(Shader * shader)
 {
 	shader->use();
 	glm::mat4 projection = glm::perspective(glm::radians(camera->Zoom), (float)GlobalVar::SCR_WIDTH / (float)GlobalVar::SCR_HEIGHT, 0.1f, 100.0f);
-	glm::mat4 view = camera->GetViewMatrix();
+	glm::mat4 view = camera->GetViewMatrix(); 
 	shader->setMat4("projection", projection);
 	shader->setMat4("view", view);
 	// set light uniforms
 	shader->setVec3("viewPos", camera->Position);
+}
+
+void Worldbase::set_pbr_info(Shader *shader)
+{
+	shader->use();
+	shader->setVec3("albedo", 0.5f, 0.0f, 0.0f);
+	/*shader->setFloat("roughness", 0.5f);
+	shader->setFloat("metallic", 0.5);*/
+	shader->setFloat("ao", 1.0f);
+	
 }
 
 void Worldbase::render_deferred()
@@ -433,6 +544,17 @@ void Worldbase::render_deferred()
 
 	
 
+}
+
+void Worldbase::render_pbr()
+{
+	set_camera_info(pbr_mgr->pbrShader);
+	set_light_info(pbr_mgr->pbrShader);
+	set_pbr_info(pbr_mgr->pbrShader);
+	for (auto it = scene_entities_pbr.begin(); it != scene_entities_pbr.end(); ++it)
+	{
+		(*it)->render(pbr_mgr->pbrShader);
+	}
 }
 
 void Worldbase::processInput(GLFWwindow *window)
@@ -491,6 +613,11 @@ void Worldbase::add_scene_entity(GameObject * ent)
 	scene_entities.push_back(ent);
 }
 
+
+void Worldbase::add_scene_entity_pbr(GameObject * ent)
+{
+	scene_entities_pbr.push_back(ent);
+}
 
 int Worldbase::add_light(LightType light_type)
 {

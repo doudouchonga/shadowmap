@@ -29,6 +29,9 @@ public:
 	RenderMesh *render_mesh;
 	Model *model_mesh;
 
+	float metallic;
+	float roughness;
+
 };
 
 #endif

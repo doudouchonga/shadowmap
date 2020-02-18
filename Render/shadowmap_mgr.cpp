@@ -12,6 +12,7 @@ ShadowmapMgr::ShadowmapMgr()
 	depthMapFBO = -1;
 	depthMap = -1;
 	light_pos = glm::vec3(15, 15, 15);
+	cast_shadow_light = NULL;
 }
 
 ShadowmapMgr::~ShadowmapMgr()
@@ -23,8 +24,8 @@ void ShadowmapMgr::init_depth_map()
 {
 	// configure depth map FBO
 	// -----------------------
-	const unsigned int SHADOW_WIDTH = GlobalVar::SCR_WIDTH, SHADOW_HEIGHT = GlobalVar::SCR_HEIGHT;
-	//const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	//const unsigned int SHADOW_WIDTH = GlobalVar::SCR_WIDTH, SHADOW_HEIGHT = GlobalVar::SCR_HEIGHT;
+	const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 	
 	glGenFramebuffers(1, &depthMapFBO);
 	// create depth texture
@@ -98,18 +99,22 @@ glm::mat4 ShadowmapMgr::getlightSpaceMatrix()
 
 void ShadowmapMgr::render_depth_map()
 {
+	if (cast_shadow_light == NULL)
+	{
+		return;
+	}
 	if (cast_shadow_entites.size() == 0)
 	{
 		return; 
 	}
-
+	glCullFace(GL_FRONT);
 	glm::mat4 lightSpaceMatrix = getlightSpaceMatrix();
 	
-	//为什么要设置成1024x1024呢
-	//glViewport(0, 0, 1024, 1024);
+	//为什么要设置成1024x1024呢，改善锯齿
+	glViewport(0, 0, 2048, 2048);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 	//BUG clear操作注意放到绑定fbo之后，不然等于这个fbo会一直没有清理过缓存
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	depthShader->use();
@@ -121,6 +126,8 @@ void ShadowmapMgr::render_depth_map()
 	}
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, GlobalVar::SCR_WIDTH, GlobalVar::SCR_HEIGHT);
+	glCullFace(GL_BACK);
 	//渲染一次后将列表清空
 	cast_shadow_entites.clear();
 }

@@ -39,7 +39,8 @@ void GameObject::render(Shader * shader)
 	glm::mat4 model = getModeMatrix();
 
 	shader->setMat4("model", model);
-	
+	shader->setFloat("roughness", roughness);
+	shader->setFloat("metallic", metallic);
 	if (model_mesh != NULL)
 	{
 		model_mesh->Draw(shader);
